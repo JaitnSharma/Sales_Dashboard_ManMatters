@@ -13,6 +13,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+st.markdown("### ✅ App is booting successfully... Please upload your CSV file below or use the demo dataset.")
 
 # Custom CSS for better styling
 st.markdown("""
@@ -50,14 +51,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Load data with caching
+# === Step 4: Lazy import + safer parsing ===
 @st.cache_data
 def load_data(uploaded_file):
+    import pandas as pd  # Lazy import for faster app startup
+
     df = pd.read_csv(uploaded_file)
-    df['Order_Date'] = pd.to_datetime(df['Order_Date'])
-    df['Order_Time'] = pd.to_datetime(df['Order_Time'], format='%H:%M:%S').dt.time
-    df['Delivery_Date'] = pd.to_datetime(df['Delivery_Date'], errors='coerce')
+    df['Order_Date'] = pd.to_datetime(df['Order_Date'], errors='coerce')
+
+    if 'Order_Time' in df.columns:
+        df['Order_Time'] = pd.to_datetime(df['Order_Time'], format='%H:%M:%S', errors='coerce').dt.time
+
+    if 'Delivery_Date' in df.columns:
+        df['Delivery_Date'] = pd.to_datetime(df['Delivery_Date'], errors='coerce')
+
     return df
+
 
 # File upload section
 st.sidebar.markdown("---")
@@ -69,24 +78,31 @@ uploaded_file = st.sidebar.file_uploader(
     help="Upload the comprehensive_sales_data_sept_oct_2025.csv file"
 )
 
-# Check if file is uploaded
-if uploaded_file is None:
-    st.warning("⚠️ Please upload a CSV file to view the dashboard")
-    st.info("""
-    ### 📋 Instructions:
-    1. Click on **'Browse files'** in the sidebar
-    2. Select your CSV file
-    3. The dashboard will load automatically!
-    
-    ### 📊 Expected CSV Format:
-    The file should contain columns like:
-    - Order_ID, Order_Date, Order_Time
-    - Customer details (Name, Email, City, etc.)
-    - Product details (Name, Category, SKU, etc.)
-    - Revenue and pricing information
-    - Order status and delivery information
-    """)
+# === Step 3: Demo dataset fallback ===
+use_demo = st.sidebar.checkbox("🧪 Use Sample Dataset (for testing)", value=False)
+
+if uploaded_file is not None:
+    df = load_data(uploaded_file)
+elif use_demo:
+    import pandas as pd, numpy as np
+    st.sidebar.info("🧪 Using sample demo dataset")
+    dates = pd.date_range("2025-09-01", periods=30)
+    df = pd.DataFrame({
+        "Order_ID": range(1, 31),
+        "Order_Date": dates,
+        "Order_Time": ["12:00:00"] * 30,
+        "Delivery_Date": dates + pd.Timedelta(days=2),
+        "Product_Category": np.random.choice(["Hair", "Skin", "Health"], 30),
+        "Customer_City": np.random.choice(["Mumbai", "Delhi", "Bangalore", "Pune"], 30),
+        "Customer_Segment": np.random.choice(["Premium", "Regular"], 30),
+        "Payment_Method": np.random.choice(["Credit Card", "UPI", "COD"], 30),
+        "Total_Amount_INR": np.random.randint(1000, 5000, 30),
+        "Order_Status": np.random.choice(["Delivered", "Processing", "In Transit"], 30)
+    })
+else:
+    st.warning("⚠️ Please upload a CSV file or enable demo mode from the sidebar.")
     st.stop()
+
 
 # Load the data
 df = load_data(uploaded_file)
@@ -1821,3 +1837,5 @@ st.markdown("""
     <p>Built with Streamlit & Plotly | Data-Driven Business Intelligence</p>
 </div>
 """, unsafe_allow_html=True)
+print("✅ Streamlit app fully loaded and ready.", flush=True)
+
