@@ -19,10 +19,10 @@
   // More verbose install & logging output
   "updateContentCommand": "set -euxo pipefail && echo '🔍 Starting package setup...' && if [ -f packages.txt ]; then echo '📦 Installing APT packages:' && cat packages.txt && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y < packages.txt; else echo '⚠️ No packages.txt found'; fi && if [ -f requirements.txt ]; then echo '🐍 Installing Python requirements:' && cat requirements.txt && pip3 install --user -r requirements.txt --verbose; else echo '⚠️ No requirements.txt found'; fi && echo '🚀 Installing Streamlit...' && pip3 install --user streamlit --verbose && echo '✅ Packages installed successfully'",
 
-  // Start Streamlit with full debug logging and no browser open
-  "postAttachCommand": {
-    "server": "echo '🔧 Starting Streamlit in debug mode...' && streamlit run appy.py --server.enableCORS false --server.enableXsrfProtection false --logger.level=debug --server.headless true --server.enableWebsocketCompression false"
-  },
+"postAttachCommand": {
+  "server": "python3 -u -m streamlit run appy.py --server.enableCORS false --server.enableXsrfProtection false --server.headless true --logger.level=debug 2>&1 | tee streamlit_debug.log"
+}
+
 
   "portsAttributes": {
     "8501": {
